@@ -11,6 +11,21 @@ permissions:
 jobs:
   backend:
     runs-on: ubuntu-latest
+    env:
+      SECRET_KEY: test-only-secret
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5432"
+      CRPT_THUMBPRINT: test
+      OMS_ID: test
+      OMS_CONN_ID: test
+      CRPT_SANDBOX: "true"
+      CRPT_MOCK_MODE: "true"
+      GS1_PREFIX: "0000000"
+      GS1_EXTENSION_DIGIT: "0"
+      DEBUG: "false"
     defaults:
       run:
         working-directory: backend
@@ -24,7 +39,6 @@ jobs:
             backend/requirements.txt
             backend/requirements.dev.txt
       - run: pip install -r requirements.txt -r requirements.dev.txt
-      - run: cp ../.env.example .env
       - run: python -m pytest -q
       - run: python -m compileall app ../signer_service
 
