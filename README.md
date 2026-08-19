@@ -33,12 +33,13 @@
 
 ```bash
 cp .env.example .env
+# заполните все обязательные значения в .env
 docker compose up --build
 ```
 
 API будет доступен на `http://localhost:8000`, документация OpenAPI — на `http://localhost:8000/docs`, метрики — на `http://localhost:8000/metrics`.
 
-Перед подключением к реальным сервисам замените все значения `replace-with-*`, настройте сертификат и сначала проверьте sandbox-режим. Production-секреты в репозитории отсутствуют.
+До запуска задайте параметры PostgreSQL и Redis, случайные `SECRET_KEY` и служебные токены, идентификаторы CRPT/OMS, отпечаток сертификата, GS1-префикс и параметры сервиса подписи. Пустые значения в `.env.example` намеренны. Сначала используйте sandbox- или mock-режим; production-секреты в репозитории отсутствуют.
 
 ## Web-сканер
 
@@ -64,10 +65,12 @@ npm run build
 cd signer_service
 python -m venv .venv
 .\.venv\Scripts\pip.exe install -r requirements.txt
+copy .env.example .env
+# заполните CRPT_THUMBPRINT, CRPT_MOCK_MODE и SIGNER_TOKEN в .env
 .\.venv\Scripts\python.exe -m uvicorn main:app --host 127.0.0.1 --port 8010
 ```
 
-Задайте `SIGNER_TOKEN` и передайте то же значение backend через `CRPT_SIGNER_TOKEN`. Не открывайте этот сервис в интернет без дополнительной сетевой защиты.
+Передайте тот же `SIGNER_TOKEN` backend через `CRPT_SIGNER_TOKEN`. Не открывайте этот сервис в интернет без дополнительной сетевой защиты.
 
 ## Разработка и проверки
 
