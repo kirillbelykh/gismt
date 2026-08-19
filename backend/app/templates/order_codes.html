@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заказ #{{ order.id }} - Коды маркировки</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .order-id {
+            font-size: 14px;
+            color: #666;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .order-name {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .status-ready { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .status-processing { background: #fff8e1; color: #ff8f00; border: 1px solid #ffe082; }
+        .status-pending { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+        .status-ordering { background: #f3e5f5; color: #7b1fa2; border: 1px solid #e1bee7; }
+        .status-error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
+        .status-closed { background: #f0f0f0; color: #6c757d; border: 1px solid #dee2e6; }
+
+        .order-details {
+            display: grid;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .detail-card {
+            background: #fafafa;
+            border-radius: 8px;
+            padding: 24px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .detail-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .detail-value {
+            font-size: 18px;
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+
+        .detail-subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #43a047;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.2);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #666;
+            border: 1px solid #ddd;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+            border-color: #ccc;
+            transform: translateY(-1px);
+        }
+
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #f57c00;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 152, 0, 0.2);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(244, 67, 54, 0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .download-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 32px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .download-title {
+            font-size: 16px;
+            font-weight: 500;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .download-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-download {
+            padding: 12px 24px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            color: #333;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-download:hover {
+            background: #f5f5f5;
+            border-color: #ccc;
+            transform: translateY(-1px);
+        }
+
+        .info-footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eaeaea;
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            text-decoration: none;
+            font-size: 14px;
+            padding: 10px 20px;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .back-link:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        /* Модальные окна */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 24px;
+            background: white;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .modal-subtitle {
+            margin-top: 8px;
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #666;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 12px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background-color: #f5f5f5;
+        }
+
+        .modal-content {
+            flex: 1;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .modal-content p {
+            margin: 0 0 16px 0;
+            font-size: 15px;
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .modal-footer {
+            padding: 20px 24px;
+            background: #f8f9fa;
+            border-top: 1px solid #eaeaea;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer .btn {
+            padding: 10px 24px;
+            font-size: 14px;
+        }
+
+        .confirmation-icon {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .confirmation-icon .icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #ffebee;
+            color: #d32f2f;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        .confirmation-icon .icon-wrapper.warning {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+
+        .confirmation-icon .icon-wrapper.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .pdf-container {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .pdf-loading {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            color: #666;
+        }
+
+        .pdf-loading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Уведомления */
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 20px;
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1001;
+            transform: translateX(120%);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid #4CAF50;
+        }
+
+        .notification.error {
+            border-left: 4px solid #f44336;
+        }
+
+        .notification .notification-icon {
+            font-size: 20px;
+        }
+
+        .notification.success .notification-icon {
+            color: #4CAF50;
+        }
+
+        .notification.error .notification-icon {
+            color: #f44336;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-content h4 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .notification-content p {
+            margin: 0;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 2px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 24px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .download-actions {
+                flex-direction: column;
+            }
+
+            .btn-download {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .modal {
+                width: 95%;
+            }
+
+            .modal-footer {
+                flex-direction: column;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Хедер -->
+        <div class="header">
+            <div class="order-id">ЗАКАЗ #{{ order.id }}</div>
+            <h1 class="order-name">{{ order.name }}</h1>
+            {# Маппинг статусов с английского на русский #}
+            {% set status_map = {
+                "READY": "ГОТОВ",
+                "PROCESSING": "В ПРОЦЕССЕ",
+                "PENDING": "ОЖИДАЕТ",
+                "ORDERING": "ЗАКАЗЫВАЕТСЯ",
+                "ERROR": "ОШИБКА",
+                "CLOSED": "ЗАКРЫТ",
+                "AGGREGATING": "ВЫПОЛНЯЕТСЯ АГРЕГАЦИЯ",
+                "AGGREGATED": "АГРЕГИРОВАН",
+                "IN_CIRCULATION": "ВВЕДЕН В ОБОРОТ",
+            } %}
+
+            {# Получаем статус в верхнем регистре для поиска в маппинге #}
+            {% set order_status_upper = order.status.upper() if order.status else 'UNKNOWN' %}
+            {% set status_display = status_map.get(order_status_upper, order_status_upper) %}
+            {% set status_class = order.status.lower() if order.status else 'unknown' %}
+
+            <div class="status-badge status-{{ status_class }}">
+                {{ status_display }}
+            </div>
+        </div>
+
+        <!-- Информация о заказе -->
+        <div class="order-details">
+            <div class="detail-card">
+                <div class="detail-title">Товар</div>
+                <div class="detail-value">{{ order.product_name or 'Не указано' }}</div>
+                {% if order.gtin %}
+                <div class="detail-subtitle">GTIN: {{ order.gtin }}</div>
+                {% endif %}
+            </div>
+
+            <div class="detail-card">
+                <div class="detail-title">Количество</div>
+                <div class="detail-value">{{ order.qty }} кодов</div>
+            </div>
+
+            <div class="detail-card">
+                <div class="detail-title">Партия</div>
+                <div class="detail-value">{{ order.batch_number }}</div>
+                <div class="detail-subtitle">Произв.: {{ order.prod_date }} | Годен до: {{ order.exp_date }}</div>
+            </div>
+        </div>
+
+        <!-- Секция загрузки -->
+        <div class="download-section">
+            <div class="download-title">Скачать коды маркировки</div>
+            <div class="download-actions">
+                <a href="/api/v1/orders-web/{{ order.id }}/pdf-datamatrix"
+                   target="_blank"
+                   class="btn-download">
+                    📄 PDF с DataMatrix
+                </a>
+
+                <a href="/api/v1/orders-web/{{ order.id }}/csv-datamatrix"
+                   target="_blank"
+                   class="btn-download">
+                    📊 CSV файл
+                </a>
+
+                <button onclick="openPdfModal()" class="btn-download">
+                    👁️ Просмотр PDF
+                </button>
+
+                {# Кнопка закрытия заказа показывается только если заказ готов #}
+                {% if order.status.upper() == 'READY' %}
+                <button onclick="showCloseOrderModal()" class="btn-download" style="background: #fff3e0; border-color: #ff9800; color: #ff9800;">
+                    🔒 Закрыть заказ
+                </button>
+                {% elif order.status.upper() == 'CLOSED' %}
+                <button class="btn-download" style="background: #f0f0f0; border-color: #dee2e6; color: #6c757d;" disabled>
+                    ✅ Заказ закрыт
+                </button>
+                {% endif %}
+                <button onclick="showDeleteOrderModal()"
+                        class="btn-download"
+                        style="background: #ffebee; border-color: #f44336; color: #f44336;">
+                    🗑️ Удалить из БД
+                </button>
+            </div>
+        </div>
+
+        <!-- Информационное сообщение -->
+        <div class="info-footer">
+            <p>Коды маркировки доступны для скачивания в форматах PDF и CSV</p>
+            <a href="/api/v1/orders-web/" class="back-link">
+                ← Вернуться к списку заказов
+            </a>
+        </div>
+    </div>
+
+    <!-- Модальное окно для PDF -->
+    <div id="pdfModal" class="modal-overlay">
+        <div class="modal" style="max-width: 1000px; height: 90%;">
+            <div class="modal-header">
+                <h2>DataMatrix коды - Заказ #{{ order.id }}</h2>
+                <button class="modal-close" onclick="closePdfModal()">×</button>
+            </div>
+            <div class="modal-content" id="pdfContent">
+                <div class="pdf-loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка PDF...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для подтверждения закрытия заказа -->
+    <div id="closeOrderModal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeCloseOrderModal()">×</button>
+            <div class="modal-header">
+                <h2>Закрыть заказ #{{ order.id }}</h2>
+                <p class="modal-subtitle">Вы собираетесь закрыть этот заказ в системе маркировки</p>
+            </div>
+            <div class="modal-content">
+                <div class="confirmation-icon">
+                    <div class="icon-wrapper warning">
+                        ⚠️
+                    </div>
+                </div>
+                <p><strong>Важно:</strong> Закрытие заказа в системе маркировки является необратимой операцией. После закрытия вы не сможете получить дополнительные коды маркировки для этого заказа.</p>
+                <p>Пожалуйста, убедитесь, что:</p>
+                <ul style="padding-left: 20px; margin-bottom: 16px; color: #555;">
+                    <li>Все необходимые коды маркировки были получены</li>
+                    <li>Коды были использованы для маркировки продукции</li>
+                    <li>Никакие дополнительные коды не потребуются</li>
+                </ul>
+                <p>Вы уверены, что хотите закрыть заказ <strong>"{{ order.name }}"</strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCloseOrderModal()">
+                    Отмена
+                </button>
+                <button class="btn btn-danger" onclick="closeOrder()">
+                    Да, закрыть заказ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно для подтверждения удаления заказа из БД -->
+    <div id="deleteOrderModal" class="modal-overlay">
+        <div class="modal">
+            <button class="modal-close" onclick="closeDeleteOrderModal()">×</button>
+            <div class="modal-header">
+                <h2>Удалить заказ #{{ order.id }}</h2>
+                <p class="modal-subtitle">Заказ будет закрыт и удалён из базы данных</p>
+            </div>
+            <div class="modal-content">
+                <div class="confirmation-icon">
+                    <div class="icon-wrapper">
+                        🗑️
+                    </div>
+                </div>
+                <p><strong>Внимание:</strong> операция необратима.</p>
+                <p>
+                    Заказ <strong>"{{ order.name }}"</strong> будет закрыт через систему маркировки
+                    и удалён из базы данных приложения.
+                </p>
+                <p>Продолжить?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteOrderModal()">
+                    Отмена
+                </button>
+                <button class="btn btn-danger" onclick="deleteOrderFromDb()">
+                    Да, удалить заказ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Уведомление -->
+    <div id="notification" class="notification">
+        <div class="notification-icon"></div>
+        <div class="notification-content">
+            <h4></h4>
+            <p></p>
+        </div>
+        <button class="notification-close" onclick="hideNotification()">×</button>
+    </div>
+
+    <script>
+        let isPdfLoaded = false;
+
+        function openPdfModal() {
+            const modal = document.getElementById('pdfModal');
+            const content = document.getElementById('pdfContent');
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            if (!isPdfLoaded) {
+                loadPdfIntoModal(content);
+                isPdfLoaded = true;
+            }
+        }
+
+        function closePdfModal() {
+            const modal = document.getElementById('pdfModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        function loadPdfIntoModal(container) {
+            const pdfUrl = `/api/v1/orders-web/{{ order.id }}/pdf-datamatrix`;
+
+            container.innerHTML = `
+                <div class="pdf-loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка PDF...</p>
+                </div>
+            `;
+
+            fetch(pdfUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Ошибка загрузки PDF');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    const blobUrl = URL.createObjectURL(blob);
+
+                    container.innerHTML = `
+                        <iframe
+                            src="${blobUrl}"
+                            class="pdf-container"
+                            title="PDF с DataMatrix кодами"
+                        ></iframe>
+                    `;
+
+                    const modal = document.getElementById('pdfModal');
+                    modal.addEventListener('hidden', () => {
+                        URL.revokeObjectURL(blobUrl);
+                    });
+                })
+                .catch(error => {
+                    console.error('Ошибка загрузки PDF:', error);
+                    container.innerHTML = `
+                        <div class="pdf-loading" style="color: #dc3545;">
+                            <h3>Ошибка загрузки PDF</h3>
+                            <p>${error.message}</p>
+                            <button onclick="loadPdfIntoModal(this.parentElement.parentElement)"
+                                    class="btn-download"
+                                    style="margin-top: 20px;">
+                                Попробовать снова
+                            </button>
+                        </div>
+                    `;
+                });
+        }
+
+        // Функции для работы с модальным окном закрытия заказа
+        function showDeleteOrderModal() {
+            const modal = document.getElementById('deleteOrderModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDeleteOrderModal() {
+            const modal = document.getElementById('deleteOrderModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        async function deleteOrderFromDb() {
+            try {
+                const deleteButton = document.querySelector('#deleteOrderModal .btn-danger');
+                const originalText = deleteButton.innerHTML;
+
+                deleteButton.innerHTML = '<span class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span> Удаление...';
+                deleteButton.disabled = true;
+
+                const response = await fetch(`/api/v1/orders-web/delete/{{ order.id }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeDeleteOrderModal();
+                    showNotification(
+                        'success',
+                        'Заказ удалён',
+                        'Заказ успешно закрыт и удалён из базы данных'
+                    );
+
+                    setTimeout(() => {
+                        window.location.href = '/api/v1/orders-web/';
+                    }, 2000);
+                } else {
+                    deleteButton.innerHTML = originalText;
+                    deleteButton.disabled = false;
+
+                    showNotification(
+                        'error',
+                        'Ошибка удаления',
+                        data.error || 'Не удалось удалить заказ'
+                    );
+                }
+            } catch (error) {
+                console.error('Ошибка удаления заказа:', error);
+
+                const deleteButton = document.querySelector('#deleteOrderModal .btn-danger');
+                deleteButton.innerHTML = 'Да, удалить заказ';
+                deleteButton.disabled = false;
+
+                showNotification(
+                    'error',
+                    'Ошибка сети',
+                    'Не удалось подключиться к серверу'
+                );
+            }
+        }
+        function showCloseOrderModal() {
+            const modal = document.getElementById('closeOrderModal');
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCloseOrderModal() {
+            const modal = document.getElementById('closeOrderModal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Функция для отображения уведомлений
+        function showNotification(type, title, message, duration = 5000) {
+            const notification = document.getElementById('notification');
+            const icon = notification.querySelector('.notification-icon');
+            const titleEl = notification.querySelector('.notification-content h4');
+            const messageEl = notification.querySelector('.notification-content p');
+
+            // Устанавливаем тип уведомления
+            notification.className = `notification ${type}`;
+
+            // Устанавливаем иконку
+            if (type === 'success') {
+                icon.textContent = '✓';
+            } else if (type === 'error') {
+                icon.textContent = '✗';
+            }
+
+            // Устанавливаем текст
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+
+            // Показываем уведомление
+            notification.classList.add('show');
+
+            // Автоматически скрываем через указанное время
+            if (duration > 0) {
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, duration);
+            }
+        }
+
+        function hideNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('show');
+        }
+
+        // Функция закрытия заказа
+        async function closeOrder() {
+            try {
+                // Блокируем кнопку
+                const closeButton = document.querySelector('#closeOrderModal .btn-danger');
+                const originalText = closeButton.innerHTML;
+                closeButton.innerHTML = '<span class="spinner" style="width: 16px; height: 16px; border-width: 2px;"></span> Закрытие...';
+                closeButton.disabled = true;
+
+                const response = await fetch(`/api/v1/orders-web/close/{{ order.id }}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Закрываем модальное окно
+                    closeCloseOrderModal();
+
+                    // Показываем успешное уведомление
+                    showNotification('success', 'Заказ закрыт', 'Заказ успешно закрыт в системе маркировки');
+
+                    // Обновляем статус на странице
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+
+                } else {
+                    // Восстанавливаем кнопку
+                    closeButton.innerHTML = originalText;
+                    closeButton.disabled = false;
+
+                    // Показываем ошибку
+                    showNotification('error', 'Ошибка закрытия', data.error || 'Не удалось закрыть заказ');
+                }
+
+            } catch (error) {
+                console.error('Ошибка при закрытии заказа:', error);
+
+                // Восстанавливаем кнопку
+                const closeButton = document.querySelector('#closeOrderModal .btn-danger');
+                closeButton.innerHTML = 'Да, закрыть заказ';
+                closeButton.disabled = false;
+
+                // Показываем ошибку
+                showNotification('error', 'Ошибка сети', 'Не удалось подключиться к серверу');
+            }
+        }
+
+        // Закрытие модальных окон по клику на overlay
+        document.getElementById('pdfModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closePdfModal();
+            }
+        });
+
+        document.getElementById('closeOrderModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeCloseOrderModal();
+            }
+        });
+
+        // Закрытие модального окна удаления по клику на overlay
+        document.getElementById('deleteOrderModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                closeDeleteOrderModal();
+            }
+        });
+
+        // Закрытие по клавише ESC
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const pdfModal = document.getElementById('pdfModal');
+                const closeModal = document.getElementById('closeOrderModal');
+
+                if (pdfModal.classList.contains('active')) {
+                    closePdfModal();
+                }
+                if (closeModal.classList.contains('active')) {
+                    closeCloseOrderModal();
+                }
+            }
+        });
+    </script>
+</body>
+</html>

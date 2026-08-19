@@ -1,0 +1,1233 @@
+{% extends "base.html" %}
+
+{% block title %}Заказ кодов маркировки{% endblock %}
+
+{% block header_title %}<i class="fas fa-boxes"></i> Заказ кодов маркировки{% endblock %}
+
+{% block header_subtitle %}Создайте заказ для получения кодов маркировки от CRPT{% endblock %}
+
+
+{% block content %}
+<!-- Компактное меню для заполнения форм -->
+<div class="compact-form-container">
+    <div class="form-toggle-header">
+        <button id="formToggle" class="btn btn-secondary">
+            <i class="fas fa-plus-circle"></i> Создать новый заказ
+        </button>
+    </div>
+
+    <div id="orderFormContainer" style="display: none;">
+        <div class="form-modal-wrapper">
+            <div class="vertical-form">
+                <form id="orderForm" hx-post="/api/v1/orders-web/create"
+                      hx-target="#result"
+                      hx-swap="innerHTML">
+
+                <!-- Order Name Section -->
+                <div class="form-section compact">
+                    <h3><i class="fas fa-heading"></i> Название заказа</h3>
+                    <div class="form-group full-width">
+                        <input type="text" id="order_name" name="order_name"
+                               placeholder="Название заказа (опционально)"
+                               class="compact-input">
+                    </div>
+                </div>
+
+                <!-- Search Method Toggle -->
+                <div class="form-section compact">
+                    <h3><i class="fas fa-search"></i> Метод поиска продукта</h3>
+                    <div class="search-toggle compact">
+                        <button type="button" class="toggle-btn compact active" id="toggleManual">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="toggle-btn compact" id="toggleGtin">
+                            <i class="fas fa-barcode"></i>
+                        </button>
+                    </div>
+
+                    <!-- Manual Input Block -->
+                    <div id="manual-block">
+                        <div class="form-grid compact">
+                            <div class="form-group">
+                                <select id="simpl_name" name="simpl_name" required class="compact-select">
+                                    <option value="">Упрощённое название...</option>
+                                    {% for opt in simplified_options %}
+                                    <option value="{{ opt }}">{{ opt }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <select id="size" name="size" required class="compact-select">
+                                    <option value="">Размер...</option>
+                                    {% for opt in size_options %}
+                                    <option value="{{ opt }}">{{ opt }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <select id="units_per_pack" name="units_per_pack" required class="compact-select">
+                                    <option value="">Кол-во в уп...</option>
+                                    {% for opt in units_options %}
+                                    <option value="{{ opt }}">{{ opt }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- Добавленные поля цвета и венчика -->
+                            <div class="form-group" id="color-group" style="display: none;">
+                                <select id="color" name="color" class="compact-select">
+                                    <option value="">Цвет...</option>
+                                    {% for opt in color_options %}
+                                    <option value="{{ opt }}">{{ opt }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="form-group" id="venchik-group" style="display: none;">
+                                <select id="venchik" name="venchik" class="compact-select">
+                                    <option value="">Венчик...</option>
+                                    {% for opt in venchik_options %}
+                                    <option value="{{ opt }}">{{ opt }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GTIN Search Block -->
+                    <div id="gtin-block" class="gtin-search-container" style="display: none;">
+                        <div class="form-group full-width">
+                            <div class="search-input-group compact">
+                                <input type="text" id="gtin" name="gtin"
+                                       placeholder="GTIN (13-14 цифр)"
+                                       class="compact-input">
+                                <button type="button" id="searchGtinBtn" class="btn btn-search compact">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            <div id="gtin-search-result" class="compact-result"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Compact Form Row -->
+                <div class="form-row compact">
+                    <div class="form-group">
+                        <label>Кол-во:</label>
+                        <input type="number" id="quantity" name="quantity"
+                               value="10" min="1" max="10000" required
+                               class="compact-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Партия:</label>
+                        <input type="text" id="batch_number" name="batch_number"
+                               value="251201" required
+                               class="compact-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Произв.:</label>
+                        <input type="date" id="prod_date" name="prod_date"
+                               value="{{ default_prod_date }}" required
+                               class="compact-input">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Годен до:</label>
+                        <input type="date" id="exp_date" name="exp_date"
+                               value="{{ default_exp_date }}" required
+                               class="compact-input">
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary compact" id="submitBtn">
+                        <i class="fas fa-rocket"></i> Создать
+                    </button>
+                    <button type="button" id="cancelForm" class="btn btn-secondary compact">
+                        Отмена
+                    </button>
+                </div>
+                </form>
+            </div>
+        </div>
+</div>
+
+<!-- Loading Spinner -->
+<div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Создание заказа...</p>
+</div>
+
+<!-- Result Display -->
+<div id="result"></div>
+
+<!-- Строка поиска -->
+<div class="search-header">
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="orderSearch"
+               placeholder="Поиск заказов по названию, партии, статусу..."
+               autocomplete="off">
+        <button id="clearSearch" class="btn-clear">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    <div class="search-info" id="searchInfo">
+        Найдено: <span id="orderCount">0</span> заказов
+    </div>
+</div>
+
+<!-- Компактный список заказов -->
+<div class="orders-container">
+    <div class="orders-header">
+        <div class="orders-column" style="width: 120px;">Статус</div>
+        <div class="orders-column" style="flex: 2; padding-left: 40px; margin-left: 30px;">Название</div>
+        <div class="orders-column" style="width: 100px;">Кол-во</div>
+        <div class="orders-column" style="flex: 1.5;">Партия</div>
+        <div class="orders-column" style="width: 150px;">Дата создания</div>
+    </div>
+
+    <div class="orders-list" id="ordersList">
+        <!-- Заказы будут загружены через JavaScript -->
+        <div class="loading-orders">
+            <div class="spinner"></div>
+            <p>Загрузка заказов...</p>
+        </div>
+    </div>
+
+    <div class="orders-footer">
+        <button id="loadMoreBtn" class="btn btn-secondary" style="display: none;">
+            <i class="fas fa-arrow-down"></i> Загрузить еще
+        </button>
+        <div class="orders-stats" id="ordersStats"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Стили для компактной формы */
+.compact-form-container {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.form-toggle-header {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.compact-form-container #orderFormContainer {
+    padding: 15px;
+}
+
+.form-section.compact h3 {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #555;
+}
+
+.search-toggle.compact {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.toggle-btn.compact {
+    padding: 8px 15px;
+    font-size: 12px;
+    border: 1px solid #ddd;
+    background: #f8f9fa;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.toggle-btn.compact.active {
+    background: #4a90e2;
+    color: white;
+    border-color: #4a90e2;
+}
+
+.form-grid.compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.compact-input, .compact-select {
+    height: 36px;
+    font-size: 13px;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.compact-input:focus, .compact-select:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.form-row.compact {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.form-row.compact .form-group {
+    margin-bottom: 0;
+}
+
+.form-row.compact label {
+    font-size: 12px;
+    margin-bottom: 4px;
+    display: block;
+    color: #666;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.btn.compact {
+    padding: 8px 20px;
+    font-size: 13px;
+}
+
+.btn-primary {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-primary:hover {
+    background: #45a049;
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #333;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btn-secondary:hover {
+    background: #e9ecef;
+}
+
+/* Поля цвета и венчика */
+#color-group, #venchik-group {
+    transition: all 0.3s ease;
+    opacity: 1;
+}
+
+#color-group[style*="display: none"],
+#venchik-group[style*="display: none"] {
+    opacity: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* Стили для строки поиска */
+.search-header {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.search-box {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-box i {
+    position: absolute;
+    left: 12px;
+    color: #999;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 15px 10px 40px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.3s;
+}
+
+.search-box input:focus {
+    border-color: #4a90e2;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.btn-clear {
+    position: absolute;
+    right: 10px;
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.btn-clear:hover {
+    color: #666;
+}
+
+.search-info {
+    font-size: 13px;
+    color: #666;
+    white-space: nowrap;
+}
+
+/* Стили для компактного списка заказов */
+.orders-container {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.orders-header {
+    display: flex;
+    background: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    padding: 12px 15px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #555;
+}
+
+.orders-column {
+    padding: 0 10px;
+}
+
+/* Отступ только для колонки "Название" в header */
+.orders-header .orders-column:nth-child(2) {
+    padding-left: 26px;
+}
+
+.orders-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.order-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.order-row:hover {
+    background-color: #f8f9fa;
+}
+
+.order-row:last-child {
+    border-bottom: none;
+}
+
+.order-status-cell {
+    width: 120px;
+    padding: 0 10px;
+}
+
+
+.status-ready { background: #d4edda; color: #155724; }
+.status-processing { background: #fff3cd; color: #856404; }
+.status-pending { background: #cce5ff; color: #004085; }
+.status-ordering { background: #d1ecf1; color: #0c5460; }
+.status-error { background: #f8d7da; color: #721c24; }
+.status-unknown { background: #e2e3e5; color: #383d41; }
+
+.order-name-cell {
+    justify-content: center;
+    flex: 2;
+    padding: 0 10px;
+    margin-left: 30px;
+    font-weight: 500;
+}
+
+.order-qty-cell {
+    width: 100px;
+    padding: 0 10px;
+    text-align: center;
+}
+
+.order-batch-cell {
+    flex: 1.5;
+    padding: 0 10px;
+    font-family: monospace;
+    font-size: 13px;
+    color: #666;
+}
+
+.order-date-cell {
+    width: 150px;
+    padding: 0 10px;
+    font-size: 12px;
+    color: #888;
+}
+
+.loading-orders {
+    padding: 40px;
+    text-align: center;
+    color: #666;
+}
+
+.orders-footer {
+    padding: 15px;
+    border-top: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.orders-stats {
+    font-size: 13px;
+    color: #666;
+}
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.order-row {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .orders-header {
+        display: none;
+    }
+
+    .order-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .order-status-cell,
+    .order-name-cell,
+    .order-qty-cell,
+    .order-batch-cell,
+    .order-date-cell {
+        width: 100% !important;
+        padding: 0;
+    }
+
+    .order-actions-cell {
+        width: 100%;
+        text-align: left;
+        padding-top: 10px;
+    }
+
+    .search-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .search-info {
+        text-align: center;
+    }
+
+    .form-grid.compact {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row.compact {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Loading Spinner */
+.loading {
+    display: none;
+    text-align: center;
+    padding: 20px;
+}
+
+.spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #4a90e2;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* GTIN Search Results */
+.gtin-search-container {
+    margin-top: 10px;
+}
+
+.compact-result {
+    margin-top: 10px;
+}
+
+.gtin-result {
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 13px;
+}
+
+.gtin-result.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.gtin-result.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+</style>
+<style>
+.form-modal-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.vertical-form {
+    max-width: 520px;
+    width: 100%;
+    background: #ffffff;
+    padding: 24px 24px 28px;
+    border-radius: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+/* Поля ввода */
+.vertical-form input,
+.vertical-form select {
+    height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 10px;
+    border: 1px solid #dcdcdc;
+    background: #fafafa;
+    transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.vertical-form input:focus,
+.vertical-form select:focus {
+    background: #ffffff;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 3px rgba(74,144,226,0.15);
+    outline: none;
+}
+
+/* Лейблы */
+.vf-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: #444;
+    margin-top: 6px;
+}
+
+/* Кнопки */
+.vertical-form .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.vertical-form .btn {
+    height: 44px;
+    border-radius: 10px;
+    font-size: 14px;
+}
+
+/* Toggle кнопки */
+.search-toggle.compact {
+    display: flex;
+    gap: 8px;
+}
+
+.toggle-btn.compact {
+    flex: 1;
+    height: 42px;
+    border-radius: 10px;
+}
+
+/* GTIN кнопка */
+#searchGtinBtn {
+    margin-top: 8px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 6px 14px;
+    min-height: 32px;
+
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+
+    border-radius: 16px; /* ← вместо 50% */
+    white-space: nowrap; /* ← КЛЮЧЕВО */
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Конфигурация
+const colorRequired = {{ color_required|tojson }};
+const venchikRequired = {{ venchik_required|tojson }};
+let currentPage = 0;
+let isLoading = false;
+let hasMore = true;
+let currentSearch = '';
+
+// DOM Elements
+const orderFormContainer = document.getElementById('orderFormContainer');
+const formToggle = document.getElementById('formToggle');
+const orderSearch = document.getElementById('orderSearch');
+const clearSearch = document.getElementById('clearSearch');
+const ordersList = document.getElementById('ordersList');
+const loadMoreBtn = document.getElementById('loadMoreBtn');
+const orderCount = document.getElementById('orderCount');
+const ordersStats = document.getElementById('ordersStats');
+
+// Toggle Form
+formToggle.addEventListener('click', () => {
+    if (orderFormContainer.style.display === 'none') {
+        orderFormContainer.style.display = 'block';
+        formToggle.innerHTML = '<i class="fas fa-minus-circle"></i> Скрыть форму';
+    } else {
+        orderFormContainer.style.display = 'none';
+        formToggle.innerHTML = '<i class="fas fa-plus-circle"></i> Создать новый заказ';
+    }
+});
+
+// Поиск заказов
+let searchTimeout;
+orderSearch.addEventListener('input', () => {
+    clearTimeout(searchTimeout);
+    currentSearch = orderSearch.value.trim();
+    clearSearch.style.display = currentSearch ? 'block' : 'none';
+
+    searchTimeout = setTimeout(() => {
+        currentPage = 0;
+        hasMore = true;
+        loadOrders();
+    }, 300);
+});
+
+clearSearch.addEventListener('click', () => {
+    orderSearch.value = '';
+    currentSearch = '';
+    clearSearch.style.display = 'none';
+    currentPage = 0;
+    hasMore = true;
+    loadOrders();
+});
+
+// Загрузка заказов
+async function loadOrders() {
+    if (isLoading) return;
+
+    isLoading = true;
+    if (currentPage === 0) {
+        ordersList.innerHTML = '<div class="loading-orders"><div class="spinner"></div><p>Загрузка заказов...</p></div>';
+    } else {
+        loadMoreBtn.disabled = true;
+        loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Загрузка...';
+    }
+
+    try {
+        const url = new URL('/api/v1/orders-web/list', window.location.origin);
+        url.searchParams.append('skip', currentPage * 20);
+        url.searchParams.append('limit', 20);
+        if (currentSearch) {
+            url.searchParams.append('search', currentSearch);
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.success) {
+            renderOrders(data.data, currentPage === 0);
+            orderCount.textContent = data.data.length;
+            ordersStats.textContent = `Загружено: ${data.data.length} из ${data.total || '?'}`;
+            hasMore = data.has_more;
+
+            if (hasMore && data.data.length >= 20) {
+                loadMoreBtn.style.display = 'block';
+            } else {
+                loadMoreBtn.style.display = 'none';
+            }
+
+            if (data.data.length === 0) {
+                if (currentSearch) {
+                    ordersList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-search fa-2x" style="color: #ccc; margin-bottom: 15px;"></i>
+                            <p>Заказов по запросу "${currentSearch}" не найдено</p>
+                        </div>
+                    `;
+                } else {
+                    ordersList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-box-open fa-2x" style="color: #ccc; margin-bottom: 15px;"></i>
+                            <p>Заказов пока нет</p>
+                            <button id="createFirstOrder" class="btn btn-primary" style="margin-top: 15px;">
+                                <i class="fas fa-plus"></i> Создать первый заказ
+                            </button>
+                        </div>
+                    `;
+
+                    document.getElementById('createFirstOrder')?.addEventListener('click', () => {
+                        orderFormContainer.style.display = 'block';
+                        formToggle.innerHTML = '<i class="fas fa-minus-circle"></i> Скрыть форму';
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    });
+                }
+            }
+        } else {
+            ordersList.innerHTML = `
+                <div class="error-state">
+                    <i class="fas fa-exclamation-triangle fa-2x" style="color: #dc3545; margin-bottom: 15px;"></i>
+                    <p>Ошибка загрузки заказов: ${data.error || 'Неизвестная ошибка'}</p>
+                    <button onclick="loadOrders()" class="btn btn-secondary" style="margin-top: 15px;">
+                        <i class="fas fa-redo"></i> Повторить попытку
+                    </button>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки заказов:', error);
+        ordersList.innerHTML = `
+            <div class="error-state">
+                <i class="fas fa-exclamation-triangle fa-2x" style="color: #dc3545; margin-bottom: 15px;"></i>
+                <p>Ошибка сети. Проверьте соединение.</p>
+                <button onclick="loadOrders()" class="btn btn-secondary" style="margin-top: 15px;">
+                    <i class="fas fa-redo"></i> Повторить попытку
+                </button>
+            </div>
+        `;
+    } finally {
+        isLoading = false;
+        loadMoreBtn.disabled = false;
+        loadMoreBtn.innerHTML = '<i class="fas fa-arrow-down"></i> Загрузить еще';
+    }
+}
+
+// Отображение заказов
+function renderOrders(orders, clear = true) {
+    if (clear) {
+        ordersList.innerHTML = '';
+    }
+
+    if (!orders || orders.length === 0) return;
+
+    orders.forEach(order => {
+        const orderRow = document.createElement('a');
+        orderRow.href = `/api/v1/orders-web/${order.id}/view`;
+        orderRow.target = '_blank';
+        orderRow.className = 'order-row';
+
+        const statusClass = `status-${order.status.toLowerCase()}`;
+
+        orderRow.innerHTML = `
+            <div class="order-status-cell">
+                <span class="status-badge ${statusClass}">
+                    ${order.status_display}
+                </span>
+            </div>
+            <div class="order-name-cell" style="padding-left: 40px; margin-left: 30px;">${escapeHtml(order.name)}</div>
+            <div class="order-qty-cell">${order.qty}</div>
+            <div class="order-batch-cell">${escapeHtml(order.batch_number)}</div>
+            <div class="order-date-cell">${order.created_at}</div>
+        `;
+
+        ordersList.appendChild(orderRow);
+    });
+}
+
+// Загрузить еще
+loadMoreBtn.addEventListener('click', () => {
+    currentPage++;
+    loadOrders();
+});
+
+// Вспомогательные функции
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// GTIN Search Function
+async function searchGtin() {
+    const gtin = document.getElementById('gtin').value.trim();
+
+    if (!gtin) {
+        showResult('error', 'Введите GTIN для поиска');
+        return;
+    }
+
+    // Validate GTIN format (13 or 14 digits)
+    const gtinRegex = /^\d{13,14}$/;
+    if (!gtinRegex.test(gtin)) {
+        showResult('error', 'GTIN должен содержать 13 или 14 цифр');
+        return;
+    }
+
+    // Show loading state
+    searchBtn.disabled = true;
+    searchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Поиск...';
+
+    try {
+        const response = await fetch(`/api/v1/orders-web/search-by-gtin?gtin=${encodeURIComponent(gtin)}`);
+        const data = await response.json();
+
+        if (data.success) {
+            // 1. Пытаемся сопоставить упрощенное название в выпадающем списке
+            if (data.data.simpl_name) {
+                let foundMatch = false;
+                for (let option of simplNameSelect.options) {
+                    if (option.value.toLowerCase() === data.data.simpl_name.toLowerCase()) {
+                        simplNameSelect.value = option.value;
+                        foundMatch = true;
+                        break;
+                    }
+                }
+
+                // Если точного совпадения нет, проверяем частичное
+                if (!foundMatch) {
+                    for (let option of simplNameSelect.options) {
+                        if (option.text.toLowerCase().includes(data.data.simpl_name.toLowerCase()) ||
+                            data.data.simpl_name.toLowerCase().includes(option.value.toLowerCase())) {
+                            simplNameSelect.value = option.value;
+                            foundMatch = true;
+                            console.log(`Частичное совпадение: ${data.data.simpl_name} -> ${option.value}`);
+                            break;
+                        }
+                    }
+                }
+
+                // Триггерим событие change для показа/скрытия дополнительных полей
+                simplNameSelect.dispatchEvent(new Event('change'));
+            }
+
+            // 2. Пытаемся определить и установить размер
+            if (data.data.full_name) {
+                const fullName = data.data.full_name.toLowerCase();
+                const sizeMatch = fullName.match(/\b(xs|s|m|l|xl|5[,.]0|5[,.]5|6[,.]0|6[,.]5|7[,.]0|7[,.]5|8[,.]0|8[,.]5|9[,.]0|9[,.]5|10[,.]0)\b/i);
+
+                if (sizeMatch && sizeSelect) {
+                    const foundSize = sizeMatch[0].replace(',', '.').toLowerCase();
+                    for (let option of sizeSelect.options) {
+                        if (option.value.toLowerCase() === foundSize) {
+                            sizeSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 3. Пытаемся определить количество в упаковке
+            if (data.data.full_name && unitsSelect) {
+                const unitsMatch = data.data.full_name.match(/\b(\d+)\s*(шт|уп|упк|уп\.|единиц|единицы|пачек?|упаковок?)\b/i);
+                if (unitsMatch) {
+                    const foundUnits = parseInt(unitsMatch[1]);
+                    for (let option of unitsSelect.options) {
+                        if (parseInt(option.value) === foundUnits) {
+                            unitsSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // 4. Пытаемся определить цвет
+            if (data.data.full_name) {
+                const colorKeywords = ['белый', 'зеленый', 'натуральный', 'розовый', 'синий', 'фиолетовый', 'черный'];
+                const foundColor = colorKeywords.find(color =>
+                    data.data.full_name.toLowerCase().includes(color)
+                );
+
+                if (foundColor) {
+                    const colorSelect = document.getElementById('color');
+                    if (colorSelect) {
+                        for (let option of colorSelect.options) {
+                            if (option.value === foundColor) {
+                                colorSelect.value = option.value;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 5. Показываем информационное сообщение
+            const successHTML = `
+                <div class="gtin-result success fade-in">
+                    <strong><i class="fas fa-check-circle"></i> Товар найден в номенклатуре!</strong>
+                    <div style="margin-top: 12px; line-height: 1.5;">
+                        <p><strong>GTIN:</strong> <code>${data.data.gtin}</code></p>
+                        <p><strong>Полное наименование:</strong> ${data.data.full_name || 'Не указано'}</p>
+                        <p><strong>Упрощённое название:</strong> ${data.data.simpl_name || 'Не указано'}</p>
+                    </div>
+                    <div class="info-text" style="margin-top: 12px; padding: 10px; background: rgba(255,255,255,0.3); border-radius: 6px;">
+                        <i class="fas fa-info-circle"></i> Поля формы автоматически заполнены на основе данных из номенклатуры.
+                        Проверьте и при необходимости откорректируйте значения.
+                    </div>
+                </div>
+            `;
+            resultDiv.innerHTML = successHTML;
+
+        } else {
+            // Ошибка поиска
+            const errorMessage = data.error || 'Товар не найден в номенклатуре';
+            const errorDetails = data.details ? `<br><small>${data.details}</small>` : '';
+
+            showResult('error', `${errorMessage}${errorDetails}`);
+        }
+    } catch (error) {
+        showResult('error', 'Ошибка соединения с сервером');
+        console.error('GTIN search error:', error);
+    } finally {
+        searchBtn.disabled = false;
+        searchBtn.innerHTML = '<i class="fas fa-search"></i> Найти';
+    }
+}
+
+function showResult(type, message) {
+    const className = type === 'success' ? 'gtin-result success' : 'gtin-result error';
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+    resultDiv.innerHTML = `
+        <div class="${className} fade-in">
+            <strong><i class="fas ${icon}"></i> ${type === 'success' ? 'Успешно' : 'Ошибка'}:</strong> ${message}
+        </div>
+    `;
+}
+
+// Остальной JavaScript код из оригинального шаблона
+const manualToggle = document.getElementById('toggleManual');
+const gtinToggle = document.getElementById('toggleGtin');
+const manualBlock = document.getElementById('manual-block');
+const gtinBlock = document.getElementById('gtin-block');
+const gtinInput = document.getElementById('gtin');
+const searchBtn = document.getElementById('searchGtinBtn');
+const resultDiv = document.getElementById('gtin-search-result');
+const simplNameSelect = document.getElementById('simpl_name');
+const sizeSelect = document.getElementById('size');
+const unitsSelect = document.getElementById('units_per_pack');
+const orderForm = document.getElementById('orderForm');
+const cancelForm = document.getElementById('cancelForm');
+
+// Toggle between manual and GTIN search
+manualToggle.addEventListener('click', () => {
+    manualToggle.classList.add('active');
+    gtinToggle.classList.remove('active');
+    manualBlock.style.display = 'block';
+    gtinBlock.style.display = 'none';
+
+    simplNameSelect.required = true;
+    sizeSelect.required = true;
+    unitsSelect.required = true;
+    gtinInput.required = false;
+
+    resultDiv.innerHTML = '';
+    gtinInput.value = '';
+
+    // Показываем/скрываем дополнительные поля при переключении
+    simplNameSelect.dispatchEvent(new Event('change'));
+});
+
+gtinToggle.addEventListener('click', () => {
+    gtinToggle.classList.add('active');
+    manualToggle.classList.remove('active');
+    manualBlock.style.display = 'none';
+    gtinBlock.style.display = 'block';
+
+    simplNameSelect.required = false;
+    sizeSelect.required = false;
+    unitsSelect.required = false;
+    gtinInput.required = true;
+
+    // Скрываем дополнительные поля при переключении на GTIN
+    document.getElementById('color-group').style.display = 'none';
+    document.getElementById('venchik-group').style.display = 'none';
+    document.getElementById('color').value = '';
+    document.getElementById('venchik').value = '';
+});
+
+// Show/hide color and venchik fields based on simpl_name
+simplNameSelect.addEventListener('change', function() {
+    const simplName = this.value;
+    const colorGroup = document.getElementById('color-group');
+    const venchikGroup = document.getElementById('venchik-group');
+
+    if (colorRequired.includes(simplName)) {
+        colorGroup.style.display = 'block';
+    } else {
+        colorGroup.style.display = 'none';
+        document.getElementById('color').value = '';
+    }
+
+    if (venchikRequired.includes(simplName)) {
+        venchikGroup.style.display = 'block';
+    } else {
+        venchikGroup.style.display = 'none';
+        document.getElementById('venchik').value = '';
+    }
+});
+
+// Cancel form
+cancelForm.addEventListener('click', () => {
+    orderFormContainer.style.display = 'none';
+    formToggle.innerHTML = '<i class="fas fa-plus-circle"></i> Создать новый заказ';
+    orderForm.reset();
+});
+
+// Form validation
+orderForm.addEventListener('submit', function(e) {
+    const currentMethod = gtinToggle.classList.contains('active') ? 'gtin' : 'manual';
+
+    if (currentMethod === 'gtin' && !gtinInput.value.trim()) {
+        e.preventDefault();
+        showResult('error', 'Пожалуйста, введите GTIN или выполните поиск');
+        return;
+    }
+
+    if (currentMethod === 'manual') {
+        if (!simplNameSelect.value || !sizeSelect.value || !unitsSelect.value) {
+            e.preventDefault();
+            alert('Пожалуйста, заполните все обязательные поля для ручного ввода');
+            return;
+        }
+
+        // Проверка на обязательность цвет/венчик (если они отображаются)
+        const colorGroup = document.getElementById('color-group');
+        const venchikGroup = document.getElementById('venchik-group');
+
+        if (colorGroup.style.display === 'block' && !document.getElementById('color').value) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите цвет');
+            return;
+        }
+
+        if (venchikGroup.style.display === 'block' && !document.getElementById('venchik').value) {
+            e.preventDefault();
+            alert('Пожалуйста, выберите венчик');
+            return;
+        }
+    }
+
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('submitBtn').disabled = true;
+});
+
+// Event Listeners
+searchBtn.addEventListener('click', searchGtin);
+
+gtinInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        searchGtin();
+    }
+});
+
+// HTMX Events
+document.body.addEventListener('htmx:beforeRequest', function() {
+    document.getElementById('loading').style.display = 'block';
+});
+
+document.body.addEventListener('htmx:afterRequest', function() {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('submitBtn').disabled = false;
+
+    // После успешного создания заказа обновляем список
+    setTimeout(() => {
+        currentPage = 0;
+        hasMore = true;
+        loadOrders();
+    }, 1000);
+});
+
+// Инициализация
+document.addEventListener('DOMContentLoaded', () => {
+    // Загружаем заказы
+    loadOrders();
+
+    // Автообновление каждые 30 секунд
+    setInterval(() => {
+        if (!document.hidden && !currentSearch) {
+            currentPage = 0;
+            hasMore = true;
+            loadOrders();
+        }
+    }, 30000);
+
+    // Установка дат по умолчанию
+    const today = new Date();
+    const nextYear = new Date(today);
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+
+    document.getElementById('prod_date').value = today.toISOString().split('T')[0];
+    document.getElementById('exp_date').value = nextYear.toISOString().split('T')[0];
+
+    // Инициализация поля цвета и венчика
+    simplNameSelect.dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

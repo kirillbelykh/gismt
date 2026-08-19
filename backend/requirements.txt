@@ -1,0 +1,40 @@
+# web
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+
+# database
+sqlalchemy
+alembic
+asyncpg
+psycopg2-binary
+
+# background jobs
+celery
+redis
+
+# config / utils
+pydantic
+pydantic-settings
+python-dotenv
+structlog
+prometheus_client
+
+# crypto / codes (по твоему коду)
+cryptography
+python-jose
+pylibdmtx
+pyStrich
+qrcode
+python-barcode
+reportlab
+opencv-python
+pillow
+numpy
+pandas
+openpyxl
+
+#net
+httpx
+requests

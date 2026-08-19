@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Система агрегации{% endblock %}</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --text-primary: #000000;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+            --border-hover: #D1D5DB;
+            --bg: #FFFFFF;
+            --radius: 16px;
+            --transition: all 0.25s ease;
+        }
+
+        [data-theme="dark"] {
+            --text-primary: #FFFFFF;
+            --text-secondary: #9CA3AF;
+            --border: #374151;
+            --border-hover: #4B5563;
+            --bg: #000000;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            font-weight: 400;
+            line-height: 1.5;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .nav-logo {
+            display: flex;
+            align-items: center;
+            margin-right: 24px;
+        }
+
+        .nav-logo .logo {
+            height: 22px;
+        }
+
+        .logo {
+            height: 28px;
+            width: auto;
+            display: block;
+        }
+
+        /* Header - More compact */
+        .header {
+            padding: 48px 0 24px;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.25rem;
+            font-weight: 500;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 16px;
+            padding: 6px 14px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+        }
+
+        .status-badge i {
+            color: #10B981;
+            font-size: 0.625rem;
+        }
+
+        /* Navigation - More compact */
+        .nav {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            padding: 16px 0;  /* Было 12px, стало 16px */
+            padding-left: 100px;
+        }
+        .nav-container {
+            position: sticky;
+            top: 0;
+            z-index: 900;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border);
+            /* Добавьте для лучшей фиксации */
+            backdrop-filter: blur(10px);
+            background-color: rgba(var(--bg-rgb), 0.95);
+        }
+
+        .content {
+            padding-top: 24px;
+            text-align: center;
+        }
+
+        .nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.95rem;
+            padding-bottom: 6px;
+            position: relative;
+            transition: color 0.2s ease;
+        }
+
+        .nav a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav a.active {
+            color: var(--text-primary);
+        }
+
+        .nav a.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--text-primary);
+        }
+
+        .theme-toggle {
+            margin-left: auto;
+        }
+
+        .theme-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 6px 14px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+
+        .theme-btn:hover {
+            border-color: var(--border-hover);
+            color: var(--text-primary);
+        }
+
+        /* Feature Cards Grid - 4 per row on desktop */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin: 24px 0 40px;
+        }
+
+        .feature-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            min-height: 220px;
+            transition: var(--transition);
+            cursor: default;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--border-hover);
+            cursor: pointer;
+        }
+
+        .feature-card .icon {
+            font-size: 1.75rem;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            transition: var(--transition);
+        }
+
+        .feature-card:hover .icon {
+            transform: scale(1.04);
+        }
+
+        .feature-card h3 {
+            font-size: 1.125rem;
+            font-weight: 500;
+            margin-bottom: 12px;
+            letter-spacing: -0.01em;
+            line-height: 1.3;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.925rem;
+            line-height: 1.5;
+            flex-grow: 1;
+        }
+
+        /* Quick Actions - More compact */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 18px;
+            margin: 32px 0 40px;
+        }
+
+        .action-btn {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        .action-btn i {
+            font-size: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .action-btn:hover i {
+            transform: scale(1.05);
+        }
+
+        .action-btn .btn-desc {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        /* Forms - More compact */
+        .form-section {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px;
+            margin-bottom: 28px;
+        }
+
+        .form-section h3 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 18px;
+            margin-bottom: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            background: var(--bg);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            border-radius: var(--radius);
+            transition: var(--transition);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--text-primary);
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 10px 28px;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--text-primary);
+            color: var(--bg);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg);
+            color: var(--text-primary);
+            border: 1px solid var(--text-primary);
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.8;
+        }
+
+        .btn-search {
+            background: var(--text-primary);
+            color: var(--bg);
+            border: none;
+            border-radius: 999px;
+            padding: 10px 22px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-search:hover {
+            opacity: 0.9;
+        }
+
+        /* Results */
+        .result {
+            margin-top: 20px;
+            padding: 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: none;
+        }
+
+        .result.success {
+            display: block;
+            border-color: #10B981;
+            color: #065F46;
+        }
+
+        .result.error {
+            display: block;
+            border-color: #DC2626;
+            color: #991B1B;
+        }
+
+        /* Orders */
+        .order-item {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 22px;
+            margin-bottom: 14px;
+            transition: var(--transition);
+        }
+
+        .order-item:hover {
+            border-color: var(--border-hover);
+        }
+
+        .order-status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 12px;
+        }
+
+        .status-ready {
+            background: #ECFDF5;
+            color: #065F46;
+        }
+
+        .status-error {
+            background: #FEF2F2;
+            color: #991B1B;
+        }
+
+        .status-ordering {
+            background: #F9FAFB;
+            color: var(--text-primary);
+        }
+
+        /* Footer - More compact */
+        .footer {
+            padding: 36px 0;
+            border-top: 1px solid var(--border);
+            margin-top: 48px;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Mobile menu button */
+        .mobile-menu-btn {
+            display: none;
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            cursor: pointer;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+
+        .mobile-menu-btn:hover {
+            border-color: var(--border-hover);
+        }
+
+        /* Responsive Grid */
+        @media (max-width: 1024px) {
+            .features {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 18px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .nav-container {
+                position: static;
+            }
+            .container {
+                padding: 0 16px;
+            }
+
+            .header {
+                padding: 48px 0 48px; /* Фиксированная высота: одинаковый паддинг сверху и снизу */
+                text-align: center;
+                border-bottom: 1px solid var(--border);
+                margin-bottom: 24px;
+                position: relative;
+                min-height: 160px; /* Фиксированная минимальная высота */
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+
+            .header h1 {
+                font-size: 2.25rem;
+                font-weight: 500;
+                letter-spacing: -0.02em;
+                margin-bottom: 8px;
+                line-height: 1.2;
+            }
+            .header p {
+                color: var(--text-secondary);
+                font-size: 1.125rem;
+                max-width: 600px;
+                margin: 0 auto;
+                line-height: 1.4;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+
+            .nav {
+                flex-direction: column;
+                gap: 0;
+                padding: 0;
+                border: none;
+                display: none;
+            }
+
+            .nav.expanded {
+                display: flex;
+            }
+
+            .nav a {
+                width: 100%;
+                padding: 14px 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .nav a.active::after {
+                display: none;
+            }
+
+            .theme-toggle {
+                margin-left: 0;
+                width: 100%;
+                padding: 14px 0;
+            }
+
+            .theme-btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+                gap: 16px;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .search-input-group {
+                flex-direction: column;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                gap: 14px;
+                text-align: center;
+            }
+
+            .logo {
+                height: 22px;
+            }
+            .nav-logo {
+                display: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.625rem;
+            }
+
+            .feature-card {
+                padding: 24px 20px;
+                min-height: 200px;
+            }
+
+            .form-section {
+                padding: 24px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>{% block header_title %}Система агрегации{% endblock %}</h1>
+            <p>{% block header_subtitle %}Автоматизированная система агрегации{% endblock %}</p>
+            <div class="status-badge">
+                <i class="fas fa-circle"></i>
+                {% block status %}Система активна{% endblock %}
+            </div>
+        </header>
+
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i class="fas fa-bars"></i>
+        Навигация
+        <i class="fas fa-chevron-down" id="menuIcon"></i>
+    </button>
+
+    <div class="nav-container">
+        <nav class="nav" id="mainNav">
+            <a href="/" class="nav-logo">
+                <img src="{{ url_for('static', path='logo.png') }}" alt="Grundlage" class="logo">
+            </a>
+            {% block navigation %}
+            <a href="/" class="{% if request.path == '/' %}active{% endif %}">
+                <i class="fas fa-home"></i>
+                Главная
+            </a>
+            <a href="/api/v1/orders-web/" class="{% if '/orders-web' in request.path %}active{% endif %}">
+                <i class="fas fa-list-alt"></i>
+                Заказ кодов маркировки
+            </a>
+            <a href="/scanner" class="{% if '/scanner' in request.path %}active{% endif %}">
+                <i class="fas fa-camera"></i>
+                Агрегационный стол
+            </a>
+            <div class="theme-toggle">
+                <button class="theme-btn" onclick="toggleTheme()">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                    <span id="themeText">Тёмная тема</span>
+                </button>
+            </div>
+            {% endblock %}
+        </nav>
+    </div>
+
+        <main class="content">
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <div>Система агрегации ЧЗ</div>
+                <div>© 2026 Все права защищены</div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+
+            if (currentTheme === 'dark') {
+                html.removeAttribute('data-theme');
+                themeIcon.className = 'fas fa-moon';
+                themeText.textContent = 'Тёмная тема';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                themeIcon.className = 'fas fa-sun';
+                themeText.textContent = 'Светлая тема';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme');
+            const themeIcon = document.getElementById('themeIcon');
+            const themeText = document.getElementById('themeText');
+
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                if (themeIcon) themeIcon.className = 'fas fa-sun';
+                if (themeText) themeText.textContent = 'Светлая тема';
+            }
+
+            // Mobile menu toggle
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mainNav = document.getElementById('mainNav');
+            const menuIcon = document.getElementById('menuIcon');
+
+            if (mobileMenuBtn && mainNav && menuIcon) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    mainNav.classList.toggle('expanded');
+                    if (mainNav.classList.contains('expanded')) {
+                        menuIcon.className = 'fas fa-chevron-up';
+                    } else {
+                        menuIcon.className = 'fas fa-chevron-down';
+                    }
+                });
+            }
+
+            // Add pointer cursor to interactive cards
+            document.querySelectorAll('.feature-card, .action-btn').forEach(card => {
+                card.style.cursor = 'pointer';
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

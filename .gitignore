@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Environment and credentials
+.env
+.env.*
+!.env.example
+token.json
+auth_token.json
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Runtime data
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+
+# Build and local files
+build/
+dist/
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Система агрегации - Главная{% endblock %}
+
+{% block header_subtitle %}Автоматизированная станция агрегации с интеграцией «Честный Знак»{% endblock %}
+
+{% block content %}
+<div class="welcome-section fade-in">
+
+    <p>Система для автоматизации процессов заказа кодов маркировки, агрегации и управления коробками. Полностью интегрирована с государственной системой "Честный Знак".</p>
+</div>
+
+<div class="features">
+    <div class="feature-card click-effect">
+        <div class="icon">
+            <i class="fas fa-list-alt"></i>
+        </div>
+        <h3>Заказ кодов</h3>
+        <p>Создание заказов кодов маркировки через CRPT API с автоматической обработкой и отслеживанием статуса</p>
+        <span class="feature-badge">Основная функция</span>
+    </div>
+
+    <div class="feature-card click-effect">
+        <div class="icon">
+            <i class="fas fa-camera"></i>
+        </div>
+        <h3>Агрегационный стол</h3>
+        <p>Сканирование DataMatrix кодов с фотографий и автоматическое создание коробок по заданным правилам</p>
+        <span class="feature-badge">Автоматизация</span>
+    </div>
+
+    <div class="feature-card click-effect">
+        <div class="icon">
+            <i class="fas fa-box"></i>
+        </div>
+        <h3>Управление коробками</h3>
+        <p>Создание коробок, генерация SSCC и печать этикеток в соответствии с требованиями</p>
+        <span class="feature-badge">Организация</span>
+    </div>
+
+    <div class="feature-card click-effect">
+        <div class="icon">
+            <i class="fas fa-sync-alt"></i>
+        </div>
+        <h3>Автоматизация</h3>
+        <p>Фоновые задачи для обработки заказов и интеграции с CRPT. Уведомления о событиях</p>
+        <span class="feature-badge">Фоновые процессы</span>
+    </div>
+</div>
+
+<div class="quick-actions">
+    <a href="/api/v1/orders-web/" class="action-btn click-effect">
+        <i class="fas fa-list-alt"></i>
+        Заказать коды маркировки
+        <span class="btn-desc">Создание нового заказа кодов</span>
+    </a>
+    <a href="/scanner" class="action-btn secondary click-effect">
+        <i class="fas fa-camera"></i>
+        Открыть агрегационный стол
+        <span class="btn-desc">Сканирование и агрегация кодов</span>
+    </a>
+</div>
+{% endblock %}
